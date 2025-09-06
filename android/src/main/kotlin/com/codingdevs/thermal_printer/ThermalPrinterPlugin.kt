@@ -169,6 +169,11 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
     }
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        context = flutterPluginBinding.applicationContext
+
+        if (!::bluetoothService.isInitialized) {
+            bluetoothService = BluetoothService.getInstance(bluetoothHandler)
+        }
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, methodChannel)
         channel.setMethodCallHandler(this)
 
@@ -303,15 +308,23 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
      */
 
     private fun verifyIsBluetoothIsOn(): Boolean {
+        if (!::bluetoothService.isInitialized) {
+            Log.e(TAG, "BluetoothService no ha sido inicializado")
+            return false
+        }
+
         if (checkPermissions()) {
             if (!bluetoothService.mBluetoothAdapter.isEnabled) {
                 if (requestPermissionBT) return false
                 val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                currentActivity?.let { startActivityForResult(it, enableBtIntent, PERMISSION_ENABLE_BLUETOOTH, null) }
+                currentActivity?.let {
+                    startActivityForResult(it, enableBtIntent, PERMISSION_ENABLE_BLUETOOTH, null)
+                }
                 requestPermissionBT = true
                 return false
             }
         } else return false
+
         return true
     }
 
@@ -403,8 +416,14 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
         currentActivity = binding.activity
         binding.addRequestPermissionsResultListener(this)
         binding.addActivityResultListener(this)
+
+        if (!::bluetoothService.isInitialized) {
+            bluetoothService = BluetoothService.getInstance(bluetoothHandler)
+        }
+
         bluetoothService.setActivity(currentActivity)
     }
+
 
     override fun onDetachedFromActivityForConfigChanges() {
         currentActivity = null
@@ -415,8 +434,14 @@ class ThermalPrinterPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.Re
         currentActivity = binding.activity
         binding.addRequestPermissionsResultListener(this)
         binding.addActivityResultListener(this)
+
+        if (!::bluetoothService.isInitialized) {
+            bluetoothService = BluetoothService.getInstance(bluetoothHandler)
+        }
+
         bluetoothService.setActivity(currentActivity)
     }
+
 
     override fun onDetachedFromActivity() {
         currentActivity = null
